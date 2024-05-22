@@ -31,15 +31,16 @@ enum class KeyStatus {
 
 @Preview
 @Composable
-fun Keyboard(modifier: Modifier = Modifier) {
+fun Keyboard(modifier: Modifier = Modifier, hardMode: Boolean = false,) {
     Box(modifier = Modifier.size(100.dp), contentAlignment = Alignment.Center) {
-        Key(text = 'A')
+        Key(text = 'A', hardMode = hardMode)
     }
 }
 
 @Composable
 fun Key(
-    modifier: Modifier = Modifier, text: Char, used: Boolean = false,
+    modifier: Modifier = Modifier, text: Char,
+    hardMode: Boolean = false, used: Boolean = false,
     status: KeyStatus? = null, contrast: Boolean = false,
     onclick: (Char) -> Unit = {}
 ) {
@@ -58,7 +59,7 @@ fun Key(
                 shape = RoundedCornerShape(corner = CornerSize(4.dp))
             )
             .padding(1.dp)
-            .clickable(enabled = status != KeyStatus.NOT_IN_WORD) { onclick(text) }
+            .clickable(enabled = if (hardMode) status != KeyStatus.NOT_IN_WORD else true) { onclick(text) }
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(text = text.toString().uppercase(),

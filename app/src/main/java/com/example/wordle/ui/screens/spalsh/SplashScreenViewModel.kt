@@ -8,17 +8,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.wordle.domain.WordListUseCase
+import com.example.wordle.domain.model.Settings
+import com.example.wordle.domain.usecase.SettingsUsecase
 import com.example.wordle.domain.usecase.SplashScreeUsecase
-import com.example.wordle.domain.usecase.WordUsecase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class SplashScreenViewModel @Inject constructor(
-    private val splashScreeUsecase: SplashScreeUsecase
+    private val splashScreeUsecase: SplashScreeUsecase,
+    private val settingsUsecase: SettingsUsecase
 ) : ViewModel() {
     private val wordListUseCase = WordListUseCase()
 
@@ -28,6 +31,9 @@ class SplashScreenViewModel @Inject constructor(
     private var _guessedWords: MutableState<List<String>> = mutableStateOf("      ".map { "      " }.toMutableList())
     val guessedWords: State<List<String>> = _guessedWords
 
+    private var _settings: MutableState<Settings?> = mutableStateOf(null)
+    val settings: State<Settings?> = _settings
+
     private var _attempts: MutableIntState = mutableIntStateOf(1)
     val attempts: State<Int> = _attempts
 
@@ -35,25 +41,30 @@ class SplashScreenViewModel @Inject constructor(
     val events = channel.receiveAsFlow()
 
     init {
-        loadWords()
+        loadWordsAndAppSettings()
 
         if (!filteredWords.contains(word)) {
             filteredWords = (filteredWords + word).shuffled()
         }
     }
 
-    private fun loadWords() {
+    private fun loadWordsAndAppSettings() {
         viewModelScope.launch {
-            val isNotEmpty = splashScreeUsecase.getWord.count() > 0
-            if (isNotEmpty) {
-                channel.trySend(SplashScreenUiChannel.SaveWords(true))
+            //val settings = async(Dispatchers.IO) { settingsUsecase.getSettings() }
+            val isSettingsAvailable =  settingsUsecase.getSettings().first().firstOrNull()
+            val isWordEmpty = splashScreeUsecase.getWord.count() <= 0
+
+            if (isWordEmpty || isSettingsAvailable == null) {
+                if (isWordEmpty) splashScreeUsecase.insertWord()
+                if (isSettingsAvailable == null) { settingsUsecase.saveSettings(Settings()) }
+                channel.trySend(SplashScreenUiChannel.SettingsAndWordExist(true))
                 channel.trySend(SplashScreenUiChannel.GameOver)
+                return@launch
             }
 
-            splashScreeUsecase.insertWord().also {
-                channel.trySend(SplashScreenUiChannel.SaveWords(true))
-                channel.trySend(SplashScreenUiChannel.GameOver)
-            }
+            _settings.value = isSettingsAvailable
+            channel.trySend(SplashScreenUiChannel.SettingsAndWordExist(true))
+            channel.trySend(SplashScreenUiChannel.GameOver)
         }
     }
 
@@ -144,7 +155,6 @@ class SplashScreenViewModel @Inject constructor(
         data class Guess(val guess: String) : SplashScreenUiChannel()
         object WIn: SplashScreenUiChannel()
         object GameOver: SplashScreenUiChannel()
-        data class SaveWords(val isNotEmpty: Boolean): SplashScreenUiChannel()
+        data class SettingsAndWordExist(val isNotEmpty: Boolean): SplashScreenUiChannel()
     }
-
 }

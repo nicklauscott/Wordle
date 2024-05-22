@@ -14,6 +14,6 @@ interface SettingsDao {
     suspend fun insertSetting(setting: Settings)
 
     @Query("SELECT * FROM settings")
-    fun getSettings(): Flow<List<Settings>>
+    fun getSettings(): Flow<List<Settings?>>
 
 }

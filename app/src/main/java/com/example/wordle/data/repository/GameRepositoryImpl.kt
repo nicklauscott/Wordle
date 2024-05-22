@@ -15,8 +15,8 @@ class GameRepositoryImpl @Inject constructor(
    private val gameRecordDao: GameRecordDao
 ): GameRecordRepository {
 
-    override suspend fun getGameRecord(gameId: Int): GameRecord {
-        return gameRecordDao.getGameRecord(gameId).toGameRecord()
+    override suspend fun getGameRecord(word: String): GameRecord {
+        return gameRecordDao.getGameRecord(word).toGameRecord()
     }
 
     override fun getGameRecords(): Flow<List<GameRecord>> {

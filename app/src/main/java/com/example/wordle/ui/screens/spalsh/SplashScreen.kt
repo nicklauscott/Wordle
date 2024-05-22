@@ -30,10 +30,10 @@ import kotlinx.coroutines.launch
 @Composable
 fun SplashScreen(navController: NavController, viewModel: SplashScreenViewModel) {
 
+    var settingsAndWordsExist by remember { mutableStateOf(false) }
     val scale = remember { Animatable(0f) }
     var win by remember { mutableStateOf(false) }
     var isElevated by remember { mutableStateOf(false) }
-    var databaseNotEmpty by remember { mutableStateOf(false) }
     val elevation by animateFloatAsState(targetValue = if (isElevated) 20f else 0f, label = "elevation")
     val rowScale by animateFloatAsState(targetValue = if (isElevated) 1.5f else 1f, label = "rowScale")
 
@@ -60,7 +60,7 @@ fun SplashScreen(navController: NavController, viewModel: SplashScreenViewModel)
                     isElevated = true
                     win = true
 
-                    if (databaseNotEmpty) {
+                    if (settingsAndWordsExist) {
                         delay(1000)
                         scale.animateTo(0f, animationSpec = tween(durationMillis = 1000, easing = FastOutLinearInEasing))
                         navController.popBackStack()
@@ -69,7 +69,7 @@ fun SplashScreen(navController: NavController, viewModel: SplashScreenViewModel)
                 }
 
                 SplashScreenViewModel.SplashScreenUiChannel.GameOver -> {
-                    if (databaseNotEmpty) {
+                    if (settingsAndWordsExist) {
                         launch {
                             delay(1100)
                             navController.popBackStack()
@@ -79,8 +79,8 @@ fun SplashScreen(navController: NavController, viewModel: SplashScreenViewModel)
                     scale.animateTo(0f, animationSpec = tween(durationMillis = 1000, easing = FastOutLinearInEasing))
                 }
 
-                is SplashScreenViewModel.SplashScreenUiChannel.SaveWords -> {
-                    databaseNotEmpty = it.isNotEmpty
+                is SplashScreenViewModel.SplashScreenUiChannel.SettingsAndWordExist -> {
+                    settingsAndWordsExist = it.isNotEmpty
                 }
             }
         }
@@ -98,6 +98,7 @@ fun SplashScreen(navController: NavController, viewModel: SplashScreenViewModel)
                     modifier = elevateCellRow(viewModel.attempts.value == it + 1, elevation, rowScale, isElevated, win),
                     vibrate = false,
                     submitted = true,
+                    contrast = viewModel.settings.value?.contrast ?: false,
                     userGuess = viewModel.guessedWords.value[it],
                     word = viewModel.word)
             }

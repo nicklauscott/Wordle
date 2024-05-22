@@ -1,5 +1,7 @@
 package com.example.wordle.ui.navigation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -11,6 +13,7 @@ import com.example.wordle.ui.screens.home.HomeScreen
 import com.example.wordle.ui.screens.spalsh.SplashScreen
 import com.example.wordle.ui.screens.spalsh.SplashScreenViewModel
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun Navigation(windowSizeClass: WindowSizeClass, contrast: Boolean = false) {
     val navController = rememberNavController()
@@ -21,7 +24,7 @@ fun Navigation(windowSizeClass: WindowSizeClass, contrast: Boolean = false) {
         }
 
         composable(Screens.Home.route) {
-            HomeScreen(navController = navController, contrast = contrast,
+            HomeScreen(navController = navController,
                 windowSizeClass = windowSizeClass)
         }
 

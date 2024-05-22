@@ -35,24 +35,8 @@ enum class CellStatus {
     EMPTY, IN_RIGHT_SPOT, IN_WORD, NOT_IN_WORD
 }
 
-
-
-@Preview
 @Composable
-fun CellRowPreview(modifier: Modifier = Modifier, word: String = "alert") {
-    Column(modifier = modifier) {
-        CellRow(userGuess = "     ", word = word)
-        CellRow(userGuess = "     ", word = word)
-        CellRow(userGuess = "     ", word = word)
-        CellRow(userGuess = "     ", word = word)
-        CellRow(userGuess = "     ", word = word)
-        CellRow(userGuess = "     ", word = word)
-    }
-}
-
-
-@Composable
-fun CellRow(modifier: Modifier = Modifier, submitted: Boolean = false,
+fun CellRow(modifier: Modifier = Modifier, submitted: Boolean = false, contrast: Boolean,
             vibrate: Boolean = true,
             userGuess: String = "     ", word: String, charStatus: (List<CharStatus>) -> Unit = {}) {
 
@@ -117,7 +101,7 @@ fun CellRow(modifier: Modifier = Modifier, submitted: Boolean = false,
             else if (isInWord) CellStatus.IN_WORD
             else if (isNotInWord) CellStatus.NOT_IN_WORD else CellStatus.EMPTY
 
-            Cell(modifier = modifier, text = it, submitted = submitted, status = status, contrast = false) { charStatus ->
+            Cell(modifier = modifier, text = it, submitted = submitted, status = status, contrast = contrast) { charStatus ->
                 charStatusList.add(charStatus)
             }
         }

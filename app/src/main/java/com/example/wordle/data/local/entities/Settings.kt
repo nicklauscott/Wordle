@@ -7,5 +7,6 @@ import androidx.room.PrimaryKey
 data class Settings(
     @PrimaryKey val settingsId: Int = 1,
     val username: String = "Guest",
+    val hardMode: Boolean = false,
     val contrast: Boolean = false
 )

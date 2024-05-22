@@ -16,7 +16,7 @@ fun GameRecord.toGameRecord(): com.example.wordle.data.local.entities.GameRecord
     val attempts = attempts.attemptsToString()
     val score = score
     return com.example.wordle.data.local.entities.GameRecord(
-        gameId, date, durationInSeconds, word, attempts, score
+        word, date, durationInSeconds, attempts, score
     )
 }
 
@@ -27,7 +27,7 @@ fun com.example.wordle.data.local.entities.GameRecord.toGameRecord(): GameRecord
     val word = word
     val attempts = attempts.attemptsToList()
     val score = score
-    return GameRecord(date, durationInSeconds, word, attempts, score)
+    return GameRecord(word, date, durationInSeconds, attempts, score)
 }
 
 

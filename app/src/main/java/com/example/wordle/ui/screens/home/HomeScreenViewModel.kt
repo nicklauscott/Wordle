@@ -5,18 +5,21 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.wordle.domain.model.GameRecord
+import com.example.wordle.domain.model.Settings
 import com.example.wordle.domain.usecase.GameRecordUsecase
+import com.example.wordle.domain.usecase.SettingsUsecase
 import com.example.wordle.domain.usecase.WordUsecase
-import com.example.wordle.ui.screens.home.component.HomeScreenUiChannel
-import com.example.wordle.ui.screens.home.component.HomeScreenUiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -25,11 +28,15 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeScreenViewModel @Inject constructor(
     private val gameRecordUsecase: GameRecordUsecase,
-    private val wordUsecase: WordUsecase
+    private val wordUsecase: WordUsecase,
+    private val settingsUsecase: SettingsUsecase
 ) : ViewModel() {
 
     private var _state: MutableState<HomeScreenUIState> = mutableStateOf(HomeScreenUIState())
     val state: State<HomeScreenUIState> = _state
+
+    private val _settings: MutableState<Settings?> = mutableStateOf(null)
+    val settings: State<Settings?> = _settings
 
     private val channel = Channel<HomeScreenUiChannel>(Channel.BUFFERED)
     val events = channel.receiveAsFlow()
@@ -40,15 +47,21 @@ class HomeScreenViewModel @Inject constructor(
     var playing = mutableStateOf<Boolean?>(null)
         private set
 
-    private var countDown = 300
+    private var lastTimestamp = 0L
+    private var _timeInMillis: MutableState<Long> = mutableLongStateOf(0L)
+    val timeInMillis: State<Long> = _timeInMillis
 
     init {
         viewModelScope.launch {
+            val settings = viewModelScope.async(Dispatchers.IO) { settingsUsecase.getSettings() }
+            _settings.value = settings.await().first().first()
             val words = viewModelScope.async(Dispatchers.IO) { wordUsecase.getWord() }
             _state.value = state.value.copy(word = words.await(), attempts = 1)
             playing.value = true
+            countDown()
         }
     }
+
 
     fun onEvent(event: HomeScreenUiEvent) {
         if (playing.value == true) {
@@ -56,29 +69,85 @@ class HomeScreenViewModel @Inject constructor(
                 is HomeScreenUiEvent.CharSelect ->  addChar(event.char)
                 is HomeScreenUiEvent.Clear -> removeChar()
                 is HomeScreenUiEvent.History -> TODO()
-                is HomeScreenUiEvent.Settings -> TODO()
+                is HomeScreenUiEvent.SettingsUiEvent -> {
+                    when (event) {
+                        HomeScreenUiEvent.SettingsUiEvent.ToggleContrast -> {
+                            _settings.value = settings.value?.copy(contrast = !settings.value!!.contrast)
+                            viewModelScope.launch(Dispatchers.IO) {
+                                settings.value?.let {
+                                    settingsUsecase.saveSettings(it.copy(contrast = !it.contrast))
+                                }
+                            }
+                        }
+                        HomeScreenUiEvent.SettingsUiEvent.ToggleHardMode -> {
+                            _settings.value = settings.value?.copy(hardMode = !settings.value!!.hardMode)
+                            viewModelScope.launch(Dispatchers.IO) {
+                                settings.value?.let {
+                                    settingsUsecase.saveSettings(it.copy(hardMode = !it.hardMode))
+                                }
+                            }
+                        }
+                    }
+                }
                 is HomeScreenUiEvent.Submit -> submit()
                 is HomeScreenUiEvent.UpdateCharStatus -> updateCharStatus(event.charStatusList)
-                is HomeScreenUiEvent.CountDown -> countDown = event.duration
-                else -> {}
+                is HomeScreenUiEvent.Restart ->  { resetGame() }
             }
             return
         }
 
         when (event) {
             is HomeScreenUiEvent.Restart -> resetGame()
+            is HomeScreenUiEvent.SettingsUiEvent -> {
+                when (event) {
+                    HomeScreenUiEvent.SettingsUiEvent.ToggleContrast -> {
+                        _settings.value = settings.value?.copy(contrast = !settings.value!!.contrast)
+                        viewModelScope.launch(Dispatchers.IO) {
+                            settings.value?.let {
+                                settingsUsecase.saveSettings(it.copy(contrast = !it.contrast))
+                            }
+                        }
+                    }
+                    HomeScreenUiEvent.SettingsUiEvent.ToggleHardMode -> {
+                        _settings.value = settings.value?.copy(hardMode = !settings.value!!.hardMode)
+                        viewModelScope.launch(Dispatchers.IO) {
+                            settings.value?.let {
+                                settingsUsecase.saveSettings(it.copy(hardMode = !it.hardMode))
+                            }
+                        }
+                    }
+                }
+            }
             else -> {}
+        }
+    }
+
+    private fun countDown() {
+        lastTimestamp = System.currentTimeMillis()
+        viewModelScope.launch(Dispatchers.IO) {
+            while (playing.value == true) {
+                delay(1000)
+                _timeInMillis.value += System.currentTimeMillis() - lastTimestamp
+                lastTimestamp = System.currentTimeMillis()
+                if (timeInMillis.value>= 300000.0) {
+                    playing.value = false
+                    channel.send(HomeScreenUiChannel.TimesUp)
+                    saveGameRecord(false)
+                }
+            }
         }
     }
 
     private fun resetGame() {
         viewModelScope.launch {
+            launch(Dispatchers.IO) { saveGameRecord(false) }
             playing.value = null
             val words = viewModelScope.async(Dispatchers.IO) { wordUsecase.getWord() }
             _state.value = HomeScreenUIState(word = words.await(), attempts = 1)
-            countDown = 300
+            _timeInMillis.value = 0L
             _charStatus.value = emptyList()
             playing.value = true
+            countDown()
         }
     }
 
@@ -177,7 +246,7 @@ class HomeScreenViewModel @Inject constructor(
                         if (state.value.guesses.first.userGuess == state.value.word) {
                             saveGameRecord(true)
                             playing.value = false
-                            channel.send(HomeScreenUiChannel.Win)
+                            channel.send(HomeScreenUiChannel.Win(1))
                         }
                     }
                 }
@@ -194,7 +263,7 @@ class HomeScreenViewModel @Inject constructor(
                         if (state.value.guesses.second.userGuess == state.value.word) {
                             saveGameRecord(true)
                             playing.value = false
-                            channel.send(HomeScreenUiChannel.Win)
+                            channel.send(HomeScreenUiChannel.Win(2))
                         }
                     }
                 }
@@ -211,7 +280,7 @@ class HomeScreenViewModel @Inject constructor(
                         if (state.value.guesses.third.userGuess == state.value.word) {
                             saveGameRecord(true)
                             playing.value = false
-                            channel.send(HomeScreenUiChannel.Win)
+                            channel.send(HomeScreenUiChannel.Win(3))
                         }
                     }
                 }
@@ -228,7 +297,7 @@ class HomeScreenViewModel @Inject constructor(
                         if (state.value.guesses.fourth.userGuess == state.value.word) {
                             saveGameRecord(true)
                             playing.value = false
-                            channel.send(HomeScreenUiChannel.Win)
+                            channel.send(HomeScreenUiChannel.Win(4))
                         }
                     }
                 }
@@ -245,7 +314,7 @@ class HomeScreenViewModel @Inject constructor(
                         if (state.value.guesses.fifth.userGuess == state.value.word) {
                             saveGameRecord(true)
                             playing.value = false
-                            channel.send(HomeScreenUiChannel.Win)
+                            channel.send(HomeScreenUiChannel.Win(5))
                         }
                     }
                 }
@@ -267,7 +336,7 @@ class HomeScreenViewModel @Inject constructor(
 
                         saveGameRecord(true)
                         playing.value = false
-                        channel.send(HomeScreenUiChannel.Win)
+                        channel.send(HomeScreenUiChannel.Win(6))
                     }
                 }
             }
@@ -336,7 +405,7 @@ class HomeScreenViewModel @Inject constructor(
         val gameRecord = GameRecord(
             word = state.value.word,
             attempts = guesses,
-            durationInSeconds = 300 - countDown,
+            durationInSeconds = 300 - timeInMillis.value.toInt(),
             score = if (win) when (state.value.attempts) {
                 1 -> 6 2 -> 5 3 -> 4 4 -> 3 5 -> 2 6 -> 1 else -> 0
             } else 0

@@ -28,6 +28,12 @@ val Typography = Typography(
         fontSize = 18.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.5.sp
+    ),
+    labelSmall = TextStyle(
+        fontFamily = customFontFamily[3],
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.5.sp
     )
 
 )
