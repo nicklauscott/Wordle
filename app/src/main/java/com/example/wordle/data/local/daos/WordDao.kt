@@ -24,4 +24,7 @@ interface WordDao {
     @Query("SELECT count(*) > 0 FROM word WHERE word = :word")
     fun doesWordExist(word: String): Boolean
 
+    @Query("UPDATE word SET used = 0")
+    suspend fun resetWords()
+
 }

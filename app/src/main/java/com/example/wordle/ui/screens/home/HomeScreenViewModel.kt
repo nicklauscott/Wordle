@@ -1,7 +1,6 @@
 package com.example.wordle.ui.screens.home
 
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
@@ -14,6 +13,7 @@ import com.example.wordle.domain.model.Settings
 import com.example.wordle.domain.usecase.GameRecordUsecase
 import com.example.wordle.domain.usecase.SettingsUsecase
 import com.example.wordle.domain.usecase.WordUsecase
+import com.example.wordle.ui.printToConsole
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -23,13 +23,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.math.abs
 
 @RequiresApi(Build.VERSION_CODES.O)
 @HiltViewModel
 class HomeScreenViewModel @Inject constructor(
-    private val gameRecordUsecase: GameRecordUsecase,
-    private val wordUsecase: WordUsecase,
-    private val settingsUsecase: SettingsUsecase
+    private val gameRecordUseCase: GameRecordUsecase,
+    private val wordUseCase: WordUsecase,
+    private val settingsUseCase: SettingsUsecase
 ) : ViewModel() {
 
     private var _state: MutableState<HomeScreenUIState> = mutableStateOf(HomeScreenUIState())
@@ -53,9 +54,9 @@ class HomeScreenViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val settings = viewModelScope.async(Dispatchers.IO) { settingsUsecase.getSettings() }
+            val settings = viewModelScope.async(Dispatchers.IO) { settingsUseCase.getSettings() }
             _settings.value = settings.await().first().first()
-            val words = viewModelScope.async(Dispatchers.IO) { wordUsecase.getWord() }
+            val words = viewModelScope.async(Dispatchers.IO) { wordUseCase.getWord() }
             _state.value = state.value.copy(word = words.await(), attempts = 1)
             playing.value = true
             countDown()
@@ -75,7 +76,7 @@ class HomeScreenViewModel @Inject constructor(
                             _settings.value = settings.value?.copy(contrast = !settings.value!!.contrast)
                             viewModelScope.launch(Dispatchers.IO) {
                                 settings.value?.let {
-                                    settingsUsecase.saveSettings(it.copy(contrast = !it.contrast))
+                                    settingsUseCase.saveSettings(it.copy(contrast = !it.contrast))
                                 }
                             }
                         }
@@ -83,7 +84,7 @@ class HomeScreenViewModel @Inject constructor(
                             _settings.value = settings.value?.copy(hardMode = !settings.value!!.hardMode)
                             viewModelScope.launch(Dispatchers.IO) {
                                 settings.value?.let {
-                                    settingsUsecase.saveSettings(it.copy(hardMode = !it.hardMode))
+                                    settingsUseCase.saveSettings(it.copy(hardMode = !it.hardMode))
                                 }
                             }
                         }
@@ -104,7 +105,7 @@ class HomeScreenViewModel @Inject constructor(
                         _settings.value = settings.value?.copy(contrast = !settings.value!!.contrast)
                         viewModelScope.launch(Dispatchers.IO) {
                             settings.value?.let {
-                                settingsUsecase.saveSettings(it.copy(contrast = !it.contrast))
+                                settingsUseCase.saveSettings(it.copy(contrast = !it.contrast))
                             }
                         }
                     }
@@ -112,7 +113,7 @@ class HomeScreenViewModel @Inject constructor(
                         _settings.value = settings.value?.copy(hardMode = !settings.value!!.hardMode)
                         viewModelScope.launch(Dispatchers.IO) {
                             settings.value?.let {
-                                settingsUsecase.saveSettings(it.copy(hardMode = !it.hardMode))
+                                settingsUseCase.saveSettings(it.copy(hardMode = !it.hardMode))
                             }
                         }
                     }
@@ -142,7 +143,7 @@ class HomeScreenViewModel @Inject constructor(
         viewModelScope.launch {
             launch(Dispatchers.IO) { saveGameRecord(false) }
             playing.value = null
-            val words = viewModelScope.async(Dispatchers.IO) { wordUsecase.getWord() }
+            val words = viewModelScope.async(Dispatchers.IO) { wordUseCase.getWord() }
             _state.value = HomeScreenUIState(word = words.await(), attempts = 1)
             _timeInMillis.value = 0L
             _charStatus.value = emptyList()
@@ -235,7 +236,7 @@ class HomeScreenViewModel @Inject constructor(
             when (state.value.attempts) {
                 1 -> {
                     if (state.value.guesses.first.userGuess.trim().length == 5) {
-                        if (!wordUsecase.getWord.doesWordExist(state.value.guesses.first.userGuess)) {
+                        if (!wordUseCase.getWord.doesWordExist(state.value.guesses.first.userGuess)) {
                             viewModelScope.launch { channel.send(HomeScreenUiChannel.NotInWordList) }
                             return@launch
                         }
@@ -252,7 +253,7 @@ class HomeScreenViewModel @Inject constructor(
                 }
                 2 -> {
                     if (state.value.guesses.second.userGuess.trim().length == 5) {
-                        if (!wordUsecase.getWord.doesWordExist(state.value.guesses.second.userGuess)) {
+                        if (!wordUseCase.getWord.doesWordExist(state.value.guesses.second.userGuess)) {
                             viewModelScope.launch { channel.send(HomeScreenUiChannel.NotInWordList) }
                             return@launch
                         }
@@ -269,7 +270,7 @@ class HomeScreenViewModel @Inject constructor(
                 }
                 3 -> {
                     if (state.value.guesses.third.userGuess.trim().length == 5) {
-                        if (!wordUsecase.getWord.doesWordExist(state.value.guesses.third.userGuess)) {
+                        if (!wordUseCase.getWord.doesWordExist(state.value.guesses.third.userGuess)) {
                             viewModelScope.launch { channel.send(HomeScreenUiChannel.NotInWordList) }
                             return@launch
                         }
@@ -286,7 +287,7 @@ class HomeScreenViewModel @Inject constructor(
                 }
                 4 -> {
                     if (state.value.guesses.fourth.userGuess.trim().length == 5) {
-                        if (!wordUsecase.getWord.doesWordExist(state.value.guesses.fourth.userGuess)) {
+                        if (!wordUseCase.getWord.doesWordExist(state.value.guesses.fourth.userGuess)) {
                             viewModelScope.launch { channel.send(HomeScreenUiChannel.NotInWordList) }
                             return@launch
                         }
@@ -303,7 +304,7 @@ class HomeScreenViewModel @Inject constructor(
                 }
                 5 -> {
                     if (state.value.guesses.fifth.userGuess.trim().length == 5) {
-                        if (!wordUsecase.getWord.doesWordExist(state.value.guesses.fifth.userGuess)) {
+                        if (!wordUseCase.getWord.doesWordExist(state.value.guesses.fifth.userGuess)) {
                             viewModelScope.launch { channel.send(HomeScreenUiChannel.NotInWordList) }
                             return@launch
                         }
@@ -320,7 +321,7 @@ class HomeScreenViewModel @Inject constructor(
                 }
                 6 -> {
                     if (state.value.guesses.sixth.userGuess.trim().length == 5) {
-                        if (!wordUsecase.getWord.doesWordExist(state.value.guesses.sixth.userGuess)) {
+                        if (!wordUseCase.getWord.doesWordExist(state.value.guesses.sixth.userGuess)) {
                             viewModelScope.launch { channel.send(HomeScreenUiChannel.NotInWordList) }
                             return@launch
                         }
@@ -344,6 +345,7 @@ class HomeScreenViewModel @Inject constructor(
     }
 
     private fun addChar(char: Char) {
+        printToConsole(1, state.value.attempts)
         when (state.value.attempts) {
             1 -> {
                 if (state.value.guesses.first.userGuess.trim().length < 5) {
@@ -405,13 +407,13 @@ class HomeScreenViewModel @Inject constructor(
         val gameRecord = GameRecord(
             word = state.value.word,
             attempts = guesses,
-            durationInSeconds = 300 - timeInMillis.value.toInt(),
-            score = if (win) when (state.value.attempts) {
-                1 -> 6 2 -> 5 3 -> 4 4 -> 3 5 -> 2 6 -> 1 else -> 0
+            durationInSeconds = (abs(timeInMillis.value) / 1000).toInt(),
+            score = if (win) when (state.value.attempts - 1) {
+                1 -> 6 2 -> 5 3 -> 4 4 -> 3 5 -> 2 else -> 1
             } else 0
         )
 
-        gameRecordUsecase.saveGameRecord(gameRecord)
+        gameRecordUseCase.saveGameRecord(gameRecord)
     }
 
     override fun onCleared() {

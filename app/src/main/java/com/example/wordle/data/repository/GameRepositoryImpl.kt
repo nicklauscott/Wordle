@@ -30,4 +30,8 @@ class GameRepositoryImpl @Inject constructor(
     override suspend fun getGameRecordTotalScore(): Flow<Int> {
         return gameRecordDao.getTotalScore()
     }
+
+    override suspend fun resetStats() {
+        gameRecordDao.resetStats()
+    }
 }

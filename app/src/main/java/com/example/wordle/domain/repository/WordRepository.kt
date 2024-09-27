@@ -6,5 +6,6 @@ interface WordRepository {
     suspend fun getWord(): String
     suspend fun countWords(): Int
     suspend fun insertWords(words: List<Word>)
+    suspend fun resetWords()
     suspend fun doesWordExist(word: String): Boolean
 }

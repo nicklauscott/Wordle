@@ -8,4 +8,5 @@ interface GameRecordRepository {
     fun getGameRecords(): Flow<List<GameRecord>>
     suspend fun insertGameRecord(gameRecord: GameRecord)
     suspend fun getGameRecordTotalScore(): Flow<Int>
+    suspend fun resetStats()
 }

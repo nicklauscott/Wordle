@@ -20,6 +20,10 @@ class WordRepositoryImpl @Inject constructor(private val wordDao: WordDao): Word
         wordDao.insertWords(words)
     }
 
+    override suspend fun resetWords() {
+        wordDao.resetWords()
+    }
+
     override suspend fun doesWordExist(word: String): Boolean {
         return wordDao.doesWordExist(word)
     }

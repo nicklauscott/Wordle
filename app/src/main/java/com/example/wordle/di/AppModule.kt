@@ -12,6 +12,7 @@ import com.example.wordle.domain.usecase.SplashScreeUsecase
 import com.example.wordle.domain.usecase.WordUsecase
 import com.example.wordle.domain.usecase.record.GetGameRecord
 import com.example.wordle.domain.usecase.record.GetGameRecords
+import com.example.wordle.domain.usecase.record.ResetGameRecords
 import com.example.wordle.domain.usecase.record.SaveGameRecord
 import com.example.wordle.domain.usecase.settings.GetSettings
 import com.example.wordle.domain.usecase.settings.SaveSettings
@@ -93,11 +94,19 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideResetGameRecordUseCase(
+        gameRecordRepository: GameRecordRepository,
+        wordRepository: WordRepository)
+    = ResetGameRecords(gameRecordRepository, wordRepository)
+
+    @Provides
+    @Singleton
     fun provideGameRecordUsecase(
         getGameRecord: GetGameRecord,
         getGameRecords: GetGameRecords,
-        saveGameRecord: SaveGameRecord) =
-        GameRecordUsecase(getGameRecord, getGameRecords, saveGameRecord)
+        saveGameRecord: SaveGameRecord,
+        resetGameRecords: ResetGameRecords) =
+        GameRecordUsecase(getGameRecord, getGameRecords, saveGameRecord, resetGameRecords)
 
 
 }

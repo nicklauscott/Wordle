@@ -208,7 +208,6 @@ fun HomeScreen(
                 }
                 IconButton(onClick = {
                     showSettingsDialog = true
-                    showAnswer = !showAnswer
                 }) {
                     Image(painter = painterResource(id = R.drawable.baseline_settings_24),
                         contentDescription = "Settings icon",

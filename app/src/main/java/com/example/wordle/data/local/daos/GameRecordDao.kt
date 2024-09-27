@@ -22,4 +22,7 @@ interface GameRecordDao {
     @Query("SELECT sum(score) FROM gamerecord")
     fun getTotalScore(): Flow<Int>
 
+    @Query("DELETE FROM gamerecord")
+    fun resetStats()
+
 }
