@@ -107,8 +107,9 @@ fun HistoryScreen(navController: NavController, viewModel: HistoryScreenViewMode
 
                     LazyRow {
                         items(state.value) { gameRecord ->
+                            val gameNo = state.value.size - state.value.indexOf(gameRecord)
                             GameRecordCell(
-                                gameNo = state.value.indexOf(gameRecord),
+                                gameNo = gameNo,
                                 contrast = settings?.contrast ?: false,
                                 gameRecord = gameRecord
                             )

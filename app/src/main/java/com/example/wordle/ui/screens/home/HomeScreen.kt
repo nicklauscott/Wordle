@@ -124,11 +124,15 @@ fun HomeScreen(
     val elevation by animateFloatAsState(targetValue = if (isElevated) 20f else 0f, label = "elevation")
     val rowScale by animateFloatAsState(targetValue = if (isElevated) 1.5f else 1f, label = "rowScale")
 
-
     LaunchedEffect(key1 = true) {
         viewModel.events.collectLatest { event ->
             when (event) {
-                is HomeScreenUiChannel.GameOver -> { showAnswer = true }
+                is HomeScreenUiChannel.GameOver -> {
+                    showAnswer = true
+                    showSettingsDialog = false
+                    dialogMessage = "Game over!"
+                    showResetDialog = true
+                }
                 is HomeScreenUiChannel.NotInWordList -> {
                     scope.launch {
                         snackBarMessage = "Not in word list"
@@ -145,12 +149,12 @@ fun HomeScreen(
                     delay(1000)
                     showResetDialog = true
                 }
-
                 HomeScreenUiChannel.TimesUp -> {
                     showSettingsDialog = false
                     dialogMessage = "Times up!"
                     showResetDialog = true
                 }
+                HomeScreenUiChannel.NewGame -> { showAnswer = false }
             }
         }
     }
@@ -159,6 +163,7 @@ fun HomeScreen(
         RestartGameDialog(
             title = dialogMessage,
             onRestart = {
+                showAnswer = false
                 isElevated = false
                 win = false
                 showResetDialog = false

@@ -42,7 +42,7 @@ fun GameRecordCell(modifier: Modifier = Modifier, contrast: Boolean = false, gam
                 gameRecord.attempts.forEach { guess ->
                     CellRow(modifier = Modifier,
                         submitted = guess.isNotBlank(), userGuess = guess.ifBlank { "     " },
-                        contrast = contrast,
+                        contrast = !contrast,
                         word = gameRecord.word) {  }
                 }
             }
@@ -55,7 +55,7 @@ fun GameRecordCell(modifier: Modifier = Modifier, contrast: Boolean = false, gam
                 val (date, time) = formatDateAndTime(gameRecord.date)
                 RecordCell(label = "Game No", value = gameNo.toString())
                 RecordCell(label = "Word", value = gameRecord.word)
-                RecordCell(label = "Attempts", value = gameRecord.attempts.size.toString())
+                RecordCell(label = "Attempts", value = gameRecord.attempts.filter { it.isNotBlank() }.size.toString())
                 RecordCell(label = "Score", value = gameRecord.score.toString())
                 RecordCell(label = "Game Length", value = "${gameRecord.durationInSeconds} sec")
                 RecordCell(label = "Date", value = date)

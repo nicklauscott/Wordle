@@ -16,11 +16,14 @@ import com.example.wordle.domain.usecase.WordUsecase
 import com.example.wordle.ui.printToConsole
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.abs
@@ -51,6 +54,8 @@ class HomeScreenViewModel @Inject constructor(
     private var lastTimestamp = 0L
     private var _timeInMillis: MutableState<Long> = mutableLongStateOf(0L)
     val timeInMillis: State<Long> = _timeInMillis
+
+    private var countDownJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -124,9 +129,10 @@ class HomeScreenViewModel @Inject constructor(
     }
 
     private fun countDown() {
+        countDownJob?.cancel()
         lastTimestamp = System.currentTimeMillis()
-        viewModelScope.launch(Dispatchers.IO) {
-            while (playing.value == true) {
+        countDownJob = viewModelScope.launch(Dispatchers.IO) {
+            while (playing.value == true && isActive) {
                 delay(1000)
                 _timeInMillis.value += System.currentTimeMillis() - lastTimestamp
                 lastTimestamp = System.currentTimeMillis()
@@ -147,6 +153,7 @@ class HomeScreenViewModel @Inject constructor(
             _state.value = HomeScreenUIState(word = words.await(), attempts = 1)
             _timeInMillis.value = 0L
             _charStatus.value = emptyList()
+            channel.send(HomeScreenUiChannel.NewGame)
             playing.value = true
             countDown()
         }
@@ -331,6 +338,7 @@ class HomeScreenViewModel @Inject constructor(
                         )
                         if (state.value.guesses.sixth.userGuess != state.value.word) {
                             viewModelScope.launch { channel.send(HomeScreenUiChannel.GameOver) }
+                            countDownJob?.cancel()
                             saveGameRecord(false)
                             return@launch
                         }

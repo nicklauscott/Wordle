@@ -15,6 +15,7 @@ sealed class HomeScreenUiEvent {
 
 sealed class HomeScreenUiChannel {
     class Win(val winningRow: Int): HomeScreenUiChannel()
+    object NewGame : HomeScreenUiChannel()
     object GameOver: HomeScreenUiChannel()
     object NotInWordList: HomeScreenUiChannel()
     object TimesUp: HomeScreenUiChannel()
