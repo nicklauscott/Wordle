@@ -64,3 +64,9 @@ fun Int.getRowByScore(): Int {
         1 -> 6 2 -> 5 3 -> 4 4 -> 3 5 -> 2 6 -> 1 else -> 0
     }
 }
+
+fun secondsToMinutes(seconds: Int): String {
+    val minutes = seconds / 60
+    val remainingSeconds = seconds % 60
+    return String.format("%2dm %02ds", minutes, remainingSeconds)
+}

@@ -32,13 +32,16 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -118,6 +121,7 @@ fun HomeScreen(
     var dialogMessage by rememberSaveable { mutableStateOf("") }
     var snackBarMessage by rememberSaveable { mutableStateOf("") }
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
+    var showEnableHardModeDialog by rememberSaveable { mutableStateOf(false) }
 
     var win by remember { mutableStateOf(false) }
     var isElevated by remember { mutableStateOf(false) }
@@ -176,7 +180,7 @@ fun HomeScreen(
             restartGame = {
                 isElevated = false
                 win = false
-                viewModel.onEvent(HomeScreenUiEvent.Restart)
+                showEnableHardModeDialog = true
                 showSettingsDialog = false
             },
             onToggleHardMode = {
@@ -191,6 +195,23 @@ fun HomeScreen(
             contrast = settings.value?.contrast ?: false,
             onToggleContrast = { viewModel.onEvent(HomeScreenUiEvent.SettingsUiEvent.ToggleContrast) }) {
             showSettingsDialog = false
+        }
+    }
+
+    if (showEnableHardModeDialog) {
+        EnableHardModeDialog(onDismissRequest = { showEnableHardModeDialog = false },
+            onDisable = {
+            if (settings.value?.hardMode == true) {
+                viewModel.onEvent(HomeScreenUiEvent.SettingsUiEvent.ToggleHardMode)
+                viewModel.onEvent(HomeScreenUiEvent.Restart)
+            }
+            showEnableHardModeDialog = false
+        }) {
+            if (settings.value?.hardMode == false) {
+                viewModel.onEvent(HomeScreenUiEvent.SettingsUiEvent.ToggleHardMode)
+                viewModel.onEvent(HomeScreenUiEvent.Restart)
+            }
+            showEnableHardModeDialog = false
         }
     }
 
@@ -333,6 +354,41 @@ fun HomeScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EnableHardModeDialog(onDismissRequest: () -> Unit, onDisable: () -> Unit, onEnable: () -> Unit) {
+    BasicAlertDialog(onDismissRequest = onDismissRequest) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.95f))
+                .padding(vertical = 16.dp, horizontal = 4.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "New Game. Enable hard mode?",
+                color = MaterialTheme.colorScheme.onBackground,
+                style = MaterialTheme.typography.bodySmall,
+                fontSize = 15.sp
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            Row {
+                OutlinedButton(onClick = onDisable) {
+                    Text(text = "Disable", style = MaterialTheme.typography.labelMedium)
+                }
+
+                Spacer(Modifier.width(16.dp))
+
+                OutlinedButton(onClick = onEnable) {
+                    Text(text = "Enable", style = MaterialTheme.typography.labelMedium)
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun SettingsDialog(
     modifier: Modifier = Modifier,
@@ -378,7 +434,7 @@ fun SettingsDialog(
                             )
                             Spacer(modifier = Modifier.height(5.dp))
 
-                            Text(text = "Any revealed hints must be used in subsequent \nguesses",
+                            Text(text = "Any revealed hints must be used in \nsubsequent guesses",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
                             )

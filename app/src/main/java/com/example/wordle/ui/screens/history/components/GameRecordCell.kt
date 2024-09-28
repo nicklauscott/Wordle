@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.example.wordle.domain.model.GameRecord
 import com.example.wordle.ui.formatDateAndTime
 import com.example.wordle.ui.screens.components.CellRow
+import com.example.wordle.ui.secondsToMinutes
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -54,10 +55,10 @@ fun GameRecordCell(modifier: Modifier = Modifier, contrast: Boolean = false, gam
                 Spacer(Modifier.height(8.dp))
                 val (date, time) = formatDateAndTime(gameRecord.date)
                 RecordCell(label = "Game No", value = gameNo.toString())
-                RecordCell(label = "Word", value = gameRecord.word)
+                RecordCell(label = "Word", value = gameRecord.word.uppercase())
                 RecordCell(label = "Attempts", value = gameRecord.attempts.filter { it.isNotBlank() }.size.toString())
                 RecordCell(label = "Score", value = gameRecord.score.toString())
-                RecordCell(label = "Game Length", value = "${gameRecord.durationInSeconds} sec")
+                RecordCell(label = "Game Length", value = secondsToMinutes(gameRecord.durationInSeconds))
                 RecordCell(label = "Date", value = date)
                 RecordCell(label = "Time", value = time)
 
